@@ -211,50 +211,54 @@ void NewsAggregator::processAllFeeds() {
 	      string articleTitle = article.title;
 	      string url = getURLServer(articleUrl);  // cs110.stanford.edu ... etc
 
+	      if(seen.find(articleUrl) == seen.end()) {
+	       
+		seen.insert(articleUrl);
 
-	      urlsLock.lock();
-	      if(urlSet.count(articleUrl)) {
-		log.noteSingleArticleDownloadSkipped(article);
-		urlsLock.unlock();
-	      } else {
-		urlSet.insert(articleUrl);
-		urlsLock.unlock();
-	      }
+		urlsLock.lock();
+		if(urlSet.count(articleUrl)) {
+		  log.noteSingleArticleDownloadSkipped(article);
+		  urlsLock.unlock();
+		} else {
+		  urlSet.insert(articleUrl);
+		  urlsLock.unlock();
+		}
 
-	      HTMLDocument document(articleUrl);
-	      log.noteSingleArticleDownloadBeginning(article);
-	      try {
-		document.parse();
-	      } catch(const HTMLDocumentException& e) {
-		log.noteSingleArticleDownloadFailure(article);
-		return;
-	      }
+		HTMLDocument document(articleUrl);
+		log.noteSingleArticleDownloadBeginning(article);
+		try {
+		  document.parse();
+		} catch(const HTMLDocumentException& e) {
+		  log.noteSingleArticleDownloadFailure(article);
+		  return;
+		}
 
-	      const auto& tokens = document.getTokens();
-	      vector<string> tokensCopy;
+		const auto& tokens = document.getTokens();
+		vector<string> tokensCopy;
 
-	      copy(tokens.begin(), tokens.end(), back_inserter(tokensCopy));
-	      sort(tokensCopy.begin(), tokensCopy.end());
+		copy(tokens.begin(), tokens.end(), back_inserter(tokensCopy));
+		sort(tokensCopy.begin(), tokensCopy.end());
 
-	      articlesLock.lock();
-	      if (titlesMap.count({articleTitle, url})) {   // if the titles map contains article title and the server
-		string existingUrl = titlesMap[{articleTitle, url}].first;
-		auto existingTokens = titlesMap[{articleTitle, url}].second;
-		cout << existingUrl << endl;
-	      	sort(existingTokens.begin(), existingTokens.end());
-		vector<string> tokenIntersection;
-		set_intersection(tokensCopy.cbegin(), tokensCopy.cend(), existingTokens.cbegin(), existingTokens.cend(), back_inserter(tokenIntersection));
-		for (auto a : tokenIntersection) cout << a << endl;
-		string smallestUrl = (existingUrl.compare(articleUrl) < 0) ? existingUrl : articleUrl;
+		articlesLock.lock();
+		if (titlesMap.count({articleTitle, url})) {   // if the titles map contains article title and the server
+		  string existingUrl = titlesMap[{articleTitle, url}].first;
+		  auto existingTokens = titlesMap[{articleTitle, url}].second;
+		  cout << existingUrl << endl;
+		  sort(existingTokens.begin(), existingTokens.end());
+		  vector<string> tokenIntersection;
+		  set_intersection(tokensCopy.cbegin(), tokensCopy.cend(), existingTokens.cbegin(), existingTokens.cend(), back_inserter(tokenIntersection));
+		  for (auto a : tokenIntersection) cout << a << endl;
+		  string smallestUrl = (existingUrl.compare(articleUrl) < 0) ? existingUrl : articleUrl;
 
 		
-		titlesMap[{articleTitle, url}] = make_pair(smallestUrl, tokenIntersection);
-		articlesLock.unlock();
-	      } else { //if title Map doesn't contain, add article url and tokens tuple to the map.
+		  titlesMap[{articleTitle, url}] = make_pair(smallestUrl, tokenIntersection);
+		  articlesLock.unlock();
+		} else { //if title Map doesn't contain, add article url and tokens tuple to the map.
 
-		cout << articleUrl << "~~~" << endl;
-		titlesMap[make_pair(articleTitle, url)] = make_pair(articleUrl, tokens);
-		articlesLock.unlock();
+		  cout << articleUrl << "~~~" << endl;
+		  titlesMap[make_pair(articleTitle, url)] = make_pair(articleUrl, tokens);
+		  articlesLock.unlock();
+		}
 	      }
 	    });
 	}
