@@ -207,11 +207,11 @@ void NewsAggregator::processAllFeeds() {
 	  poolArticles.schedule( [this, it, &articlesLock, &titlesMap] {
 
 	      Article article = *it;
-	      string articleUrl = article.url;       // a.html etc
+	      string articleUrl = article.url;       // .../a.html etc
 	      string articleTitle = article.title;
-	      string url = getURLServer(articleUrl);  // cs.110.... etc
+	      string url = getURLServer(articleUrl);  // cs110.stanford.edu ... etc
 
-	      cout << url << " vs " << articleUrl << endl;
+
 	      urlsLock.lock();
 	      if(urlSet.count(articleUrl)) {
 		log.noteSingleArticleDownloadSkipped(article);
@@ -232,7 +232,7 @@ void NewsAggregator::processAllFeeds() {
 
 	      const auto& tokens = document.getTokens();
 	      vector<string> tokensCopy;
-	      cout << tokensCopy[1]<< endl;
+	      for (auto a : tokensCopy) cout << a << endl;
 	      copy(tokens.begin(), tokens.end(), back_inserter(tokensCopy));
 	      sort(tokensCopy.begin(), tokensCopy.end());
 
@@ -250,7 +250,6 @@ void NewsAggregator::processAllFeeds() {
 		articlesLock.unlock();
 	      } else { //if title Map doesn't contain, add article url and tokens tuple to the map.
 
-		cout << articleTitle << " AND ____ " << url << endl;
 		cout << articleUrl << "~~~" << endl;
 		titlesMap[make_pair(articleTitle, url)] = make_pair(articleUrl, tokens);
 		articlesLock.unlock();
