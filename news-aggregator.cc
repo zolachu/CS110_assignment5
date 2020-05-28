@@ -162,6 +162,7 @@ void NewsAggregator::processAllFeeds() {
   vector<thread> feedThreads;
   
   //  cout << "Parsing feed list RSS file at \"" << rssFeedListURI << "\"...." << endl;
+  ThreadPool poolRSS(kNumFeedWorkers);
   RSSFeedList feedList(rssFeedListURI);
   try {
     feedList.parse();
@@ -211,7 +212,7 @@ void NewsAggregator::processAllFeeds() {
   size_t count = tokens.size();
   cout << "The first article of the first feed list contains this many tokens: " << count << endl;
   */
-  for (auto iter = feeds.begin(); iter != feeds.end(); iter++) {
+  /*  for (auto iter = feeds.begin(); iter != feeds.end(); iter++) {
     feedPermits.wait();
     feedThreads.push_back(thread([this, iter, &allArticlePermits, &feedPermits] {
 	  feedPermits.signal(on_thread_exit);
@@ -311,6 +312,95 @@ void NewsAggregator::processAllFeeds() {
 	}));
   }
   for(thread& t: feedThreads) t.join();
+  log.noteAllRSSFeedsDownloadEnd();
+  */
+  for (auto iter = feeds.begin(); iter != feeds.end(); iter++) {
+    poolRSS.schedule([this, iter] {
+	std::string rssUrl = iter->first;
+	std::string rssTitle = iter->second;
+	urlsLock.lock();
+	if (urlSet.count(rssUrl)) {
+	  log.noteSingleFeedDownloadSkipped(rssUrl);
+	  urlsLock.unlock();
+	} else {
+	  urlSet.insert(rssUrl);
+	  urlsLock.unlock();
+	}
+	RSSFeed rssFeed(rssUrl);
+	log.noteSingleFeedDownloadBeginning(rssUrl);
+	try {
+	  rssFeed.parse();
+	} catch(const RSSFeedException& e) {
+	  log.noteSingleFeedDownloadFailure(rssUrl);
+	  return;
+	}
+	log.noteSingleFeedDownloadEnd(rssUrl);
+	const auto& articles = rssFeed.getArticles();
+
+	ThreadPool poolArticles(kNumArticleWorkers);
+	std::mutex articlesLock;
+	std::map<pair<string, string>, pair<string, vector<string>>> titlesMap;
+	for (std::vector<Article>::const_iterator it = articles.begin(); it != articles.end(); it++) {
+	  poolArticles.schedule( [this, it, &articlesLock, &titlesMap] {
+
+	      Article article = *it;
+	      std::string articleUrl = article.url;
+	      std::string articleTitle = article.title;
+	      std::string server = getURLServer(articleUrl);
+
+	      urlsLock.lock();
+	      if(urlSet.count(articleUrl)) {
+		log.noteSingleArticleDownloadSkipped(article);
+		urlsLock.unlock();
+	      } else {
+		urlSet.insert(articleUrl);
+		urlsLock.unlock();
+	      }
+
+	      HTMLDocument htmlDoc(articleUrl);
+	      log.noteSingleArticleDownloadBeginning(article);
+	      try {
+		htmlDoc.parse();
+	      } catch(const HTMLDocumentException& e) {
+		log.noteSingleArticleDownloadFailure(article);
+		return;
+	      }
+
+	      const auto& tokens = htmlDoc.getTokens();
+	      std::vector<std::string> tokensCopy;
+	      copy(tokens.begin(), tokens.end(), back_inserter(tokensCopy));
+	      sort(tokensCopy.begin(), tokensCopy.end());
+
+	      articlesLock.lock();
+	      if (titlesMap.count({articleTitle, server})) {
+		string existingUrl = titlesMap[{articleTitle, server}].first;
+		auto existingTokens = titlesMap[{articleTitle,server}].second;
+		sort(existingTokens.begin(), existingTokens.end());
+		vector<string> tokenIntersection;
+		set_intersection(tokensCopy.cbegin(), tokensCopy.cend(), existingTokens.cbegin(), existingTokens.cend(), back_inserter(tokenIntersection));
+		string smallestUrl = articleUrl;
+		if (existingUrl < articleUrl) smallestUrl = existingUrl;
+		titlesMap[{articleTitle,server}] = make_pair(smallestUrl, tokenIntersection);
+		articlesLock.unlock();
+	      } else {
+		titlesMap[make_pair(articleTitle,server)] = make_pair(articleUrl, tokens);
+		articlesLock.unlock();
+	      }
+	    });
+	}
+	poolArticles.wait();
+	for (auto& element: titlesMap) {
+	  indexLock.lock();
+	  pair<string, string> title_server = element.first;
+	  pair<string, vector<string>> url_tokens = element.second;
+	  Article article = {url_tokens.first, title_server.first};
+	  index.add(article, url_tokens.second);
+	  indexLock.unlock();
+	}
+	log.noteAllArticlesHaveBeenScheduled(rssUrl);
+      });
+  }
+  poolRSS.wait();
   log.noteAllRSSFeedsDownloadEnd();
 }
 
