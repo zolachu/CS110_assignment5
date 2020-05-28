@@ -211,6 +211,7 @@ void NewsAggregator::processAllFeeds() {
 	      string articleTitle = article.title;
 	      string url = getURLServer(articleUrl);
 
+	      cout << url << " vs " << articleUrl << endl;
 	      urlsLock.lock();
 	      if(urlSet.count(articleUrl)) {
 		log.noteSingleArticleDownloadSkipped(article);
