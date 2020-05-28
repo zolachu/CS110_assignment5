@@ -244,6 +244,7 @@ void NewsAggregator::processAllFeeds() {
 		string smallestUrl = articleUrl;
 		if (existingUrl.compare(articleUrl) < 0)smallestUrl = existingUrl;
 		//		if (existingUrl < articleUrl) smallestUrl = existingUrl;
+		cout << smallestUrl << endl;
 		titlesMap[{articleTitle, url}] = make_pair(smallestUrl, tokenIntersection);
 		articlesLock.unlock();
 	      } else {
