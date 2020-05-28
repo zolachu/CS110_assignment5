@@ -250,7 +250,7 @@ void NewsAggregator::processAllFeeds() {
 
 		  //		  string smallestUrl = (existingUrl.strcmp(articleUrl) < 0) ? existingUrl : articleUrl;
 		  string smallestUrl = (string(existingUrl) < string(articleUrl)) ? existingUrl : articleUrl;
-		
+                  cout << "Comparing " << existingUrl << " AND " << articleUrl << endl;		
 		  titlesMap[{articleTitle, server}] = make_pair(smallestUrl, tokenIntersection);
 		  articlesLock.unlock();
 		} else { //if title Map doesn't contain, add article url and tokens tuple to the map.
