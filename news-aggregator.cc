@@ -159,7 +159,8 @@ NewsAggregator::NewsAggregator(const string& rssFeedListURI, bool verbose):
 void NewsAggregator::processAllFeeds() {
   map<string, std::unique_ptr<semaphore>> serverPermits;
 
-  ThreadPool poolRSS(kNumFeedWorkers);
+  //  ThreadPool poolRSS(kNumFeedWorkers);
+  ThreadPool feedPool(kNumFeedWorkers);
   RSSFeedList feedList(rssFeedListURI);
   try {
     feedList.parse();
@@ -175,7 +176,7 @@ void NewsAggregator::processAllFeeds() {
 
   
   for (auto iter = feeds.begin(); iter != feeds.end(); iter++) {
-    poolRSS.schedule([this, iter] {
+    feedPool.schedule([this, iter] {
 	string rssUrl = iter->first;
 	string rssTitle = iter->second;
 	urlsLock.lock();
@@ -204,13 +205,14 @@ void NewsAggregator::processAllFeeds() {
         mutex articlesLock;
 	map<pair<string, string>, pair<string, vector<string>>> titlesMap;
 	for (std::vector<Article>::const_iterator it = articles.begin(); it != articles.end(); it++) {
+	  
 	  poolArticles.schedule( [this, it, &articlesLock, &titlesMap] {
-
+	      
 	      Article article = *it;
 	      string articleUrl = article.url;       // .../a.html etc
 	      string articleTitle = article.title;
 	      string server = getURLServer(articleUrl);  // cs110.stanford.edu ... etc
-
+	      
 	      if(seen.find(articleUrl) == seen.end()) {
 	       
 		seen.insert(articleUrl);
@@ -250,7 +252,7 @@ void NewsAggregator::processAllFeeds() {
 
 		  //		  string smallestUrl = (existingUrl.strcmp(articleUrl) < 0) ? existingUrl : articleUrl;
 		  string smallestUrl = (string(existingUrl) < string(articleUrl)) ? existingUrl : articleUrl;
-                  cout << "Comparing " << existingUrl << " AND " << articleUrl << endl;		
+                  cout << "Comparing " << existingUrl << " AND " << articleUrl << " and " << smallestUrl<<endl;		
 		  titlesMap[{articleTitle, server}] = make_pair(smallestUrl, tokenIntersection);
 		  articlesLock.unlock();
 		} else { //if title Map doesn't contain, add article url and tokens tuple to the map.
@@ -273,7 +275,7 @@ void NewsAggregator::processAllFeeds() {
 	log.noteAllArticlesHaveBeenScheduled(rssUrl);
       });
   }
-  poolRSS.wait();
+  feedPool.wait();
   log.noteAllRSSFeedsDownloadEnd();
 }
 
