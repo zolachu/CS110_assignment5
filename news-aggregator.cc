@@ -203,10 +203,10 @@ void NewsAggregator::processAllFeeds() {
 	}
 	ThreadPool articlePool(kNumArticleWorkers);
         mutex articlesLock;
-	map<pair<string, string>, pair<string, vector<string>>> titlesMap;
+	//      	map<pair<string, string>, pair<string, vector<string>>> titlesMap;
 	for (std::vector<Article>::const_iterator it = articles.begin(); it != articles.end(); it++) {
-	  
-	  articlePool.schedule( [this, it, &articlesLock, &titlesMap] {
+	  articlePool.schedule( [this, it, &articlesLock] {     
+	  //	  articlePool.schedule( [this, it, &articlesLock, &titlesMap] {
 	      
 	      Article article = *it;
 	      string articleUrl = article.url;       // .../a.html etc

@@ -82,7 +82,9 @@ class NewsAggregator {
   static std::map<std::string, std::unique_ptr<semaphore>>serverPermits;
   static semaphore feedPermits;
   set<string> seen;
-/**
+  map<pair<string, string>, pair<string, vector<string>>> titlesMap;
+
+  /**
  * Constructor: NewsAggregator
  * ---------------------------
  * Private constructor used exclusively by the createNewsAggregator function
