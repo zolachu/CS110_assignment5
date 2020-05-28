@@ -176,37 +176,8 @@ void NewsAggregator::processAllFeeds() {
     return;
   }
   /*
-  const pair<string, string>& firstFeed = *feeds.cbegin();
-  const string& feedUrl = firstFeed.first;
-  const string& feedTitle = firstFeed.second;
 
-  cout << "Parsing feed named \"" << feedTitle << "\"..." << endl;
-  RSSFeed feed(feedUrl);
-  try {
-    feed.parse();
-  } catch (const RSSFeedException& rfe) {
-    log.noteSingleFeedDownloadFailure(feedUrl);
-    return;
-  }
 
-  const vector<Article>& articles = feed.getArticles();
-  if (articles.empty()) {
-    cout << "Feed is technically well-formed, but it's empty!" << endl;
-    return;
-  }
-
-  const Article& firstArticle = articles[0];
-  const string& articleTitle = firstArticle.title;
-  const string& articleUrl = firstArticle.url;
-  HTMLDocument document(articleUrl);
-
-  cout << "Parsing article with title \"" << articleTitle << "\"..." << endl;
-  try {
-    document.parse();
-  } catch (const HTMLDocumentException& hde) {
-    log.noteSingleArticleDownloadFailure(firstArticle);
-    return;
-  }
 
   const vector<string>& tokens = document.getTokens();
   size_t count = tokens.size();
@@ -336,7 +307,10 @@ void NewsAggregator::processAllFeeds() {
 	}
 	log.noteSingleFeedDownloadEnd(rssUrl);
 	const auto& articles = rssFeed.getArticles();
-
+	if (articles.empty()) {
+	  cout << "Feed is technically well-formed, but it's empty!" << endl;
+	  return;
+	}
 	ThreadPool poolArticles(kNumArticleWorkers);
 	std::mutex articlesLock;
 	std::map<pair<string, string>, pair<string, vector<string>>> titlesMap;
@@ -357,16 +331,16 @@ void NewsAggregator::processAllFeeds() {
 		urlsLock.unlock();
 	      }
 
-	      HTMLDocument htmlDoc(articleUrl);
+	      HTMLDocument document(articleUrl);
 	      log.noteSingleArticleDownloadBeginning(article);
 	      try {
-		htmlDoc.parse();
+		document.parse();
 	      } catch(const HTMLDocumentException& e) {
 		log.noteSingleArticleDownloadFailure(article);
 		return;
 	      }
 
-	      const auto& tokens = htmlDoc.getTokens();
+	      const auto& tokens = document.getTokens();
 	      std::vector<std::string> tokensCopy;
 	      copy(tokens.begin(), tokens.end(), back_inserter(tokensCopy));
 	      sort(tokensCopy.begin(), tokensCopy.end());
