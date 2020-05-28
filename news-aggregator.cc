@@ -232,7 +232,7 @@ void NewsAggregator::processAllFeeds() {
 
 	      const auto& tokens = document.getTokens();
 	      vector<string> tokensCopy;
-	      for (auto a : tokensCopy) cout << a << endl;
+	      for (auto a : tokensCopy) cout << a << "@@@@%%^&*(*&^&*(" << endl;
 	      copy(tokens.begin(), tokens.end(), back_inserter(tokensCopy));
 	      sort(tokensCopy.begin(), tokensCopy.end());
 
