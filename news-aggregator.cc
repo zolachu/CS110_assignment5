@@ -248,7 +248,8 @@ void NewsAggregator::processAllFeeds() {
 		articlesLock.unlock();
 	      } else { //if title Map doesn't contain, add article url and tokens tuple to the map.
 
-		cout << articleTitle << " and" << url << endl;
+		cout << articleTitle << " AND ____ " << url << endl;
+		cout << articleUrl << "~~~" << endl;
 		titlesMap[make_pair(articleTitle, url)] = make_pair(articleUrl, tokens);
 		articlesLock.unlock();
 	      }
