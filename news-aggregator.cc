@@ -157,7 +157,7 @@ NewsAggregator::NewsAggregator(const string& rssFeedListURI, bool verbose):
 
 
 void NewsAggregator::processAllFeeds() {
-  semaphore allArticlePermits(kNumArticleWorkers);
+  //  semaphore allArticlePermits(kNumArticleWorkers);
   map<string, std::unique_ptr<semaphore>> serverPermits;
 
   ThreadPool poolRSS(kNumFeedWorkers);

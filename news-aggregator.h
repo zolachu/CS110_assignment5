@@ -81,10 +81,6 @@ class NewsAggregator {
   static semaphore allArticlePermits;
   static std::map<std::string, std::unique_ptr<semaphore>>serverPermits;
   static semaphore feedPermits;
-
-  // int kAllArticlesNum = 18;
-  //  int kServersNum = 5;
-  //  int kPerServerNum = 8;
   
 /**
  * Constructor: NewsAggregator
