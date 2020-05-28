@@ -209,7 +209,7 @@ void NewsAggregator::processAllFeeds() {
 	      Article article = *it;
 	      string articleUrl = article.url;
 	      string articleTitle = article.title;
-	      string server = getURLServer(articleUrl);
+	      string url = getURLServer(articleUrl);
 
 	      urlsLock.lock();
 	      if(urlSet.count(articleUrl)) {
@@ -235,18 +235,19 @@ void NewsAggregator::processAllFeeds() {
 	      sort(tokensCopy.begin(), tokensCopy.end());
 
 	      articlesLock.lock();
-	      if (titlesMap.count({articleTitle, server})) {
-		string existingUrl = titlesMap[{articleTitle, server}].first;
-		auto existingTokens = titlesMap[{articleTitle,server}].second;
+	      if (titlesMap.count({articleTitle, url})) {   // if the titles map contains article title and the server
+		string existingUrl = titlesMap[{articleTitle, url}].first;
+		auto existingTokens = titlesMap[{articleTitle, url}].second;
 		sort(existingTokens.begin(), existingTokens.end());
 		vector<string> tokenIntersection;
 		set_intersection(tokensCopy.cbegin(), tokensCopy.cend(), existingTokens.cbegin(), existingTokens.cend(), back_inserter(tokenIntersection));
 		string smallestUrl = articleUrl;
-		if (existingUrl < articleUrl) smallestUrl = existingUrl;
-		titlesMap[{articleTitle,server}] = make_pair(smallestUrl, tokenIntersection);
+		if (existingUrl.compare(articleUrl) < 0)smallestUrl = existingUrl;
+		//		if (existingUrl < articleUrl) smallestUrl = existingUrl;
+		titlesMap[{articleTitle, url}] = make_pair(smallestUrl, tokenIntersection);
 		articlesLock.unlock();
 	      } else {
-		titlesMap[make_pair(articleTitle,server)] = make_pair(articleUrl, tokens);
+		titlesMap[make_pair(articleTitle, url)] = make_pair(articleUrl, tokens);
 		articlesLock.unlock();
 	      }
 	    });
