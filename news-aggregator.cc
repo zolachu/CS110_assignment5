@@ -242,8 +242,8 @@ void NewsAggregator::processAllFeeds() {
 		sort(existingTokens.begin(), existingTokens.end());
 		vector<string> tokenIntersection;
 		set_intersection(tokensCopy.cbegin(), tokensCopy.cend(), existingTokens.cbegin(), existingTokens.cend(), back_inserter(tokenIntersection));
-		string smallestUrl = articleUrl;
-		if (existingUrl.compare(articleUrl) < 0)smallestUrl = existingUrl;
+		string smallestUrl = (existingUrl.compare(articleUrl) < 0) ? existingUrl : articleUrl;
+		//		if (existingUrl.compare(articleUrl) < 0)smallestUrl = existingUrl;
 
 		//		if (existingUrl < articleUrl) smallestUrl = existingUrl;
 		//cout << smallestUrl << endl;
