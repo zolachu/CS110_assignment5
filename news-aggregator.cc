@@ -150,8 +150,17 @@ NewsAggregator::NewsAggregator(const string& rssFeedListURI, bool verbose):
  * You'll want to erase much of the code below and ultimately replace it with
  * your multithreaded aggregator.
  */
+
+std::mutex NewsAggregator::indexLock;
+std::mutex NewsAggregator::urlsLock;
+std::map<std::string, std::unique_ptr<semaphore>>NewsAggregator::serverPermits;
+std::set<std::string> NewsAggregator::urlSet;
+
 void NewsAggregator::processAllFeeds() {
-/*
+  semaphore allArticlePermits(kAllArticlesNum);
+  semaphore feedPermits(kServersNum);
+  vector<thread> feedThreads;
+  
   cout << "Parsing feed list RSS file at \"" << rssFeedListURI << "\"...." << endl;
   RSSFeedList feedList(rssFeedListURI);
   try {
@@ -165,7 +174,7 @@ void NewsAggregator::processAllFeeds() {
     cout << "Feed list is technically well-formed, but it's empty!" << endl;
     return;
   }
-
+  /*
   const pair<string, string>& firstFeed = *feeds.cbegin();
   const string& feedUrl = firstFeed.first;
   const string& feedTitle = firstFeed.second;
@@ -202,4 +211,106 @@ void NewsAggregator::processAllFeeds() {
   size_t count = tokens.size();
   cout << "The first article of the first feed list contains this many tokens: " << count << endl;
   */
+  for (auto iter = feeds.begin(); iter != feeds.end(); iter++) {
+    feedPermits.wait();
+    feedThreads.push_back(thread([this, iter, &allArticlePermits, &feedPermits] {
+	  feedPermits.signal(on_thread_exit);
+	  std::string rssUrl = iter->first;
+	  std::string rssTitle = iter->second;
+	  urlsLock.lock();
+	  if (urlSet.count(rssUrl)) {
+	    log.noteSingleFeedDownloadSkipped(rssUrl);
+	    urlsLock.unlock();
+	  } else {
+	    urlSet.insert(rssUrl);
+	    urlsLock.unlock();
+	  }
+	  RSSFeed rssFeed(rssUrl);
+	  log.noteSingleFeedDownloadBeginning(rssUrl);
+	  try {
+	    rssFeed.parse();
+	  } catch(const RSSFeedException& e) {
+	    log.noteSingleFeedDownloadFailure(rssUrl);
+	    return;
+	  }
+	  log.noteSingleFeedDownloadEnd(rssUrl);
+
+	  const auto& articles = rssFeed.getArticles();
+	  vector<thread> articleThreads;
+
+	  std::mutex articlesLock;
+	  unique_ptr<semaphore>& perServerPermits = serverPermits[getURLServer(rssUrl)];
+	  if (perServerPermits == nullptr) perServerPermits.reset(new semaphore(kPerServerNum));
+	  std::map<pair<string, string>, pair<string, vector<string>>> titlesMap;
+	  for (std::vector<Article>::const_iterator it = articles.begin(); it != articles.end(); it++) {
+
+	    allArticlePermits.wait();
+	    perServerPermits->wait();
+	    articleThreads.push_back(thread([this, it, &allArticlePermits, &articlesLock, &titlesMap, &perServerPermits]{
+
+		  allArticlePermits.signal(on_thread_exit);
+		  perServerPermits->signal(on_thread_exit);
+
+		  Article article = *it;
+		  std::string articleUrl = article.url;
+		  std::string articleTitle = article.title;
+		  std::string server = getURLServer(articleUrl);
+
+		  urlsLock.lock();
+		  if(urlSet.count(articleUrl)) {
+		    log.noteSingleArticleDownloadSkipped(article);
+		    urlsLock.unlock();
+		  } else {
+		    urlSet.insert(articleUrl);
+		    urlsLock.unlock();
+		  }
+
+		  HTMLDocument htmlDoc(articleUrl);
+		  log.noteSingleArticleDownloadBeginning(article);
+		  try {
+		    htmlDoc.parse();
+		  } catch(const HTMLDocumentException& e) {
+		    log.noteSingleArticleDownloadFailure(article);
+		    return;
+		  }
+
+		  const auto& tokens = htmlDoc.getTokens();
+		  std::vector<std::string> tokensCopy;      // copy const vector to vector
+		  copy(tokens.begin(), tokens.end(), back_inserter(tokensCopy));
+		  sort(tokensCopy.begin(), tokensCopy.end());
+
+		  articlesLock.lock();
+		  if (titlesMap.count({articleTitle, server})) {
+		    string existingUrl = titlesMap[{articleTitle, server}].first;
+		    auto existingTokens = titlesMap[{articleTitle,server}].second;
+		    sort(existingTokens.begin(), existingTokens.end());
+		    vector<string> tokenIntersection;
+		    set_intersection(tokensCopy.cbegin(), tokensCopy.cend(), existingTokens.cbegin(), existingTokens.cend(), back_inserter(tokenIntersection));
+		    string smallestUrl = articleUrl;
+		    if (existingUrl < articleUrl) smallestUrl = existingUrl;
+		    titlesMap[{articleTitle,server}] = make_pair(smallestUrl, tokenIntersection);
+		    articlesLock.unlock();
+		  } else {
+		    titlesMap[make_pair(articleTitle,server)] = make_pair(articleUrl, tokens);
+		    articlesLock.unlock();
+		  }
+
+		}));
+	  }
+	  for (thread& t: articleThreads) t.join();
+
+	  for (auto& element: titlesMap) {
+	    indexLock.lock();
+	    pair<string, string> title_server = element.first;
+	    pair<string, vector<string>> url_tokens = element.second;
+	    Article article = {url_tokens.first, title_server.first};
+	    index.add(article, url_tokens.second);
+	    indexLock.unlock();
+	  }
+	  log.noteAllArticlesHaveBeenScheduled(rssUrl);
+	}));
+  }
+  for(thread& t: feedThreads) t.join();
+  log.noteAllRSSFeedsDownloadEnd();
 }
+

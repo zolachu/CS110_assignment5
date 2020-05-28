@@ -75,6 +75,16 @@ class NewsAggregator {
   bool built = false;
   ThreadPool feedPool;
   ThreadPool articlePool;
+
+  static std::mutex indexLock;
+  static std::mutex urlsLock;
+  static semaphore allArticlePermits;
+  static std::map<std::string, std::unique_ptr<semaphore>>serverPermits;
+  static semaphore feedPermits;
+  static std::set<std::string> urlSet;
+  int kAllArticlesNum = 18;
+  int kServersNum = 5;
+  int kPerServerNum = 8;
   
 /**
  * Constructor: NewsAggregator
