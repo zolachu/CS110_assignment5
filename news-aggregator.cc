@@ -161,7 +161,7 @@ void NewsAggregator::processAllFeeds() {
   semaphore feedPermits(kServersNum);
   vector<thread> feedThreads;
   
-  cout << "Parsing feed list RSS file at \"" << rssFeedListURI << "\"...." << endl;
+  //  cout << "Parsing feed list RSS file at \"" << rssFeedListURI << "\"...." << endl;
   RSSFeedList feedList(rssFeedListURI);
   try {
     feedList.parse();

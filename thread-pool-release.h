@@ -35,7 +35,7 @@ public:
  * number of threads.
  */
   ThreadPool(size_t numThreads);
-        
+
 /**
  * Schedules the provided thunk (which is something that can
  * be invoked as a zero-argument function without a return value)

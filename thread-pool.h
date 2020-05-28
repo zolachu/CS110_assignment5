@@ -15,7 +15,16 @@
 #include <cstdlib>
 #include <functional>
 // place additional #include statements here
+#include <thread>      // for thread
+#include <vector>      // for vector
+#include "semaphore.h"
+#include <mutex>
+#include <queue>
+#include <condition_variable>
 
+
+
+using namespace std;
 namespace develop {
 
 class ThreadPool {
@@ -47,6 +56,45 @@ class ThreadPool {
   void wait();
 
  private:
+
+  struct myStruct {
+  myStruct(): executePermit(1) {}
+    semaphore executePermit;
+    std::thread myThread;
+  };
+
+  //  std::thread dt;                // dispatcher thread handle
+  std::vector<struct myStruct> wts;  // worker thread handles
+  semaphore executePermit;
+  semaphore dispatcherPermit;
+  semaphore workerAvailable;
+  std::size_t numToExecute;
+  std::size_t kNumThreads;
+  std::size_t allDone;
+  std::size_t numAvailable;
+  semaphore execute;
+
+  std::mutex executeLock;
+  std::queue<std::function <void(void)>> queue;
+
+  std::condition_variable_any cv;
+  std::mutex queueLock;
+  std::mutex workerLock;
+
+  /**
+   * dispatcher()
+   * -----------------
+   * private helper method
+   */
+  void dispatcher();
+
+
+  /**
+   * worker(size_t workerID)
+   * ------------------------
+   *  Private helper method
+   */
+  void worker(std::size_t workerID);
   
   ThreadPool(const ThreadPool& original) = delete;
   ThreadPool& operator=(const ThreadPool& rhs) = delete;
