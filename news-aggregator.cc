@@ -155,7 +155,7 @@ NewsAggregator::NewsAggregator(const string& rssFeedListURI, bool verbose):
  */
 
 //std::mutex NewsAggregator::indexLock;
-std::mutex NewsAggregator::urlsLock;
+//std::mutex NewsAggregator::urlsLock;
 std::map<std::string, std::unique_ptr<semaphore>>NewsAggregator::serverPermits;
 std::set<std::string> NewsAggregator::urlSet;
 
