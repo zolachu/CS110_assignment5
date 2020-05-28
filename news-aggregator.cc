@@ -154,14 +154,13 @@ NewsAggregator::NewsAggregator(const string& rssFeedListURI, bool verbose):
  * your multithreaded aggregator.
  */
 
-//std::mutex NewsAggregator::indexLock;
-//std::mutex NewsAggregator::urlsLock;
-std::map<std::string, std::unique_ptr<semaphore>>NewsAggregator::serverPermits;
+
+//std::map<std::string, std::unique_ptr<semaphore>>NewsAggregator::serverPermits;
 std::set<std::string> NewsAggregator::urlSet;
 
 void NewsAggregator::processAllFeeds() {
   semaphore allArticlePermits(kAllArticlesNum);
-
+  map<std::string, std::unique_ptr<semaphore>> serverPermits;
   ThreadPool poolRSS(kNumFeedWorkers);
   RSSFeedList feedList(rssFeedListURI);
   try {
