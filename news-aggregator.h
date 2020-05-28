@@ -76,7 +76,7 @@ class NewsAggregator {
   ThreadPool feedPool;
   ThreadPool articlePool;
 
-  static std::mutex indexLock;
+  mutex indexLock;
   static std::mutex urlsLock;
   static semaphore allArticlePermits;
   static std::map<std::string, std::unique_ptr<semaphore>>serverPermits;
