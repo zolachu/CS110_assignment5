@@ -232,7 +232,7 @@ void NewsAggregator::processAllFeeds() {
 
 	      const auto& tokens = document.getTokens();
 	      vector<string> tokensCopy;
-	      for (auto a : tokens) cout << a << "@@@@%%^&*(*&^&*(" << endl;
+
 	      copy(tokens.begin(), tokens.end(), back_inserter(tokensCopy));
 	      sort(tokensCopy.begin(), tokensCopy.end());
 
@@ -244,8 +244,10 @@ void NewsAggregator::processAllFeeds() {
 	      	sort(existingTokens.begin(), existingTokens.end());
 		vector<string> tokenIntersection;
 		set_intersection(tokensCopy.cbegin(), tokensCopy.cend(), existingTokens.cbegin(), existingTokens.cend(), back_inserter(tokenIntersection));
+		for (auto a : tokenIntersection) cout << a << endl;
 		string smallestUrl = (existingUrl.compare(articleUrl) < 0) ? existingUrl : articleUrl;
 
+		
 		titlesMap[{articleTitle, url}] = make_pair(smallestUrl, tokenIntersection);
 		articlesLock.unlock();
 	      } else { //if title Map doesn't contain, add article url and tokens tuple to the map.
