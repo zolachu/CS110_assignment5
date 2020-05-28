@@ -201,12 +201,12 @@ void NewsAggregator::processAllFeeds() {
 	  cout << "Feed is technically well-formed, but it's empty!" << endl;
 	  return;
 	}
-	ThreadPool poolArticles(kNumArticleWorkers);
+	ThreadPool articlePool(kNumArticleWorkers);
         mutex articlesLock;
 	map<pair<string, string>, pair<string, vector<string>>> titlesMap;
 	for (std::vector<Article>::const_iterator it = articles.begin(); it != articles.end(); it++) {
 	  
-	  poolArticles.schedule( [this, it, &articlesLock, &titlesMap] {
+	  articlePool.schedule( [this, it, &articlesLock, &titlesMap] {
 	      
 	      Article article = *it;
 	      string articleUrl = article.url;       // .../a.html etc
@@ -263,7 +263,7 @@ void NewsAggregator::processAllFeeds() {
 	      }
 	    });
 	}
-	poolArticles.wait();
+	articlePool.wait();
 	for (auto& element: titlesMap) {
 	  indexLock.lock();
 	  pair<string, string> title_server = element.first;
