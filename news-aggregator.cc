@@ -243,7 +243,7 @@ void NewsAggregator::processAllFeeds() {
 		if (titlesMap.count({articleTitle, url})) {   // if the titles map contains article title and the server
 		  string existingUrl = titlesMap[{articleTitle, url}].first;
 		  auto existingTokens = titlesMap[{articleTitle, url}].second;
-		  cout << existingUrl << endl;
+		  //		  cout << existingUrl << endl;
 		  sort(existingTokens.begin(), existingTokens.end());
 		  vector<string> tokenIntersection;
 		  set_intersection(tokensCopy.cbegin(), tokensCopy.cend(), existingTokens.cbegin(), existingTokens.cend(), back_inserter(tokenIntersection));
@@ -255,7 +255,7 @@ void NewsAggregator::processAllFeeds() {
 		  articlesLock.unlock();
 		} else { //if title Map doesn't contain, add article url and tokens tuple to the map.
 
-		  cout << articleUrl << "~~~" << endl;
+		  //		  cout << articleUrl << "~~~" << endl;
 		  titlesMap[make_pair(articleTitle, url)] = make_pair(articleUrl, tokens);
 		  articlesLock.unlock();
 		}
