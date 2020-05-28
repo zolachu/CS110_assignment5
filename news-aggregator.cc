@@ -155,12 +155,11 @@ NewsAggregator::NewsAggregator(const string& rssFeedListURI, bool verbose):
  */
 
 
-//std::map<std::string, std::unique_ptr<semaphore>>NewsAggregator::serverPermits;
-std::set<std::string> NewsAggregator::urlSet;
 
 void NewsAggregator::processAllFeeds() {
   semaphore allArticlePermits(kAllArticlesNum);
-  map<std::string, std::unique_ptr<semaphore>> serverPermits;
+  map<string, std::unique_ptr<semaphore>> serverPermits;
+  //  std::set<string> urlSet;
   ThreadPool poolRSS(kNumFeedWorkers);
   RSSFeedList feedList(rssFeedListURI);
   try {
