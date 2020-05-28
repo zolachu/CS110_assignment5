@@ -207,9 +207,9 @@ void NewsAggregator::processAllFeeds() {
 	  poolArticles.schedule( [this, it, &articlesLock, &titlesMap] {
 
 	      Article article = *it;
-	      string articleUrl = article.url;
+	      string articleUrl = article.url;       // a.html etc
 	      string articleTitle = article.title;
-	      string url = getURLServer(articleUrl);
+	      string url = getURLServer(articleUrl);  // cs.110.... etc
 
 	      cout << url << " vs " << articleUrl << endl;
 	      urlsLock.lock();
@@ -232,6 +232,7 @@ void NewsAggregator::processAllFeeds() {
 
 	      const auto& tokens = document.getTokens();
 	      vector<string> tokensCopy;
+	      cout << tokensCopy[1]<< endl;
 	      copy(tokens.begin(), tokens.end(), back_inserter(tokensCopy));
 	      sort(tokensCopy.begin(), tokensCopy.end());
 
