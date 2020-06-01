@@ -250,8 +250,8 @@ void NewsAggregator::processAllFeeds() {
 		  vector<string> tokenIntersection;
 		  set_intersection(tokensCopy.cbegin(), tokensCopy.cend(), existingTokens.cbegin(), existingTokens.cend(), back_inserter(tokenIntersection));
 
-		  //		  string smallestUrl = (existingUrl.strcmp(articleUrl) < 0) ? existingUrl : articleUrl;
-		  string smallestUrl = (string(existingUrl) < string(articleUrl)) ? existingUrl : articleUrl;
+		  		  string smallestUrl = (existingUrl < articleUrl) ? existingUrl : articleUrl;
+				  //string smallestUrl = (string(existingUrl) < string(articleUrl)) ? existingUrl : articleUrl;
                   //cout << "Comparing " << existingUrl << " AND " << articleUrl << " and " << smallestUrl<<endl;		
 		  titlesMap[{articleTitle, server}] = make_pair(smallestUrl, tokenIntersection);
 		  articlesLock.unlock();
