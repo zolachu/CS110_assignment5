@@ -203,20 +203,22 @@ void NewsAggregator::processAllFeeds() {
 	}
 	ThreadPool articlePool(kNumArticleWorkers);
         mutex articlesLock;
-	map<pair<string, string>, pair<string, vector<string>>> titlesMap;
+	//	map<pair<string, string>, pair<string, vector<string>>> titlesMap;
+       	set<string> seenArticles;
 	for (std::vector<Article>::const_iterator it = articles.begin(); it != articles.end(); it++) {
-	
-      	  articlePool.schedule( [this, it, &articlesLock, &titlesMap] {
+	  articlePool.schedule( [this, it, &articlesLock, &seenArticles] {
+	  //      	  articlePool.schedule( [this, it, &articlesLock, &titlesMap, &seenArticles] {
 	      
 	      Article article = *it;
 	      string articleUrl = article.url;       // .../a.html etc
 	      string articleTitle = article.title;   
-	      string server = getURLServer(articleUrl);  // cs110.stanford.edu ... etc
+	      string server = getURLServer(articleUrl);
 	      //	      cout << articleUrl << endl; // the whole article url 
-	      cout << articleUrl << endl;
-	      if(seen.find(articleUrl) == seen.end()) {
+	      // cout << articleTitle << endl;            // "Learn the alphabet"
+	      //  cout << server << endl;                 // cs110.stanford.edu
+	      if(seenArticles.find(articleUrl) == seenArticles.end()) {     
 	       
-		seen.insert(articleUrl);
+		seenArticles.insert(articleUrl);
 
 		urlsLock.lock();
 		if(urlSet.count(articleUrl)) {
@@ -243,6 +245,8 @@ void NewsAggregator::processAllFeeds() {
 		sort(tokensCopy.begin(), tokensCopy.end());
 
 		articlesLock.lock();
+		//		auto pair = {articleTitle, server};
+		//map<string, string>::iterator it = titlesMap.find({articleTitle, server});
 		if (titlesMap.count({articleTitle, server})) {   // if the titles map contains article title coming from the server
 		  string existingUrl = titlesMap[{articleTitle, server}].first;
 		  auto existingTokens = titlesMap[{articleTitle, server}].second;
@@ -254,6 +258,7 @@ void NewsAggregator::processAllFeeds() {
 		  		  string smallestUrl = (existingUrl < articleUrl) ? existingUrl : articleUrl;
 				  //string smallestUrl = (string(existingUrl) < string(articleUrl)) ? existingUrl : articleUrl;
                   //cout << "Comparing " << existingUrl << " AND " << articleUrl << " and " << smallestUrl<<endl;		
+				  //				  titlesMap.erase({articleTitle, server});
 		  titlesMap[{articleTitle, server}] = make_pair(smallestUrl, tokenIntersection);
 		  articlesLock.unlock();
 		} else { //if title Map doesn't contain, add article url and tokens tuple to the map.
