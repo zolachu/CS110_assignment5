@@ -203,11 +203,11 @@ void NewsAggregator::processAllFeeds() {
 	}
 	ThreadPool articlePool(kNumArticleWorkers);
         mutex articlesLock;
-	//	map<pair<string, string>, pair<string, vector<string>>> titlesMap;
+      	map<pair<string, string>, pair<Article, vector<string>>> titlesMap;
        	set<string> seenArticles;
 	for (std::vector<Article>::const_iterator it = articles.begin(); it != articles.end(); it++) {
-	  articlePool.schedule( [this, it, &articlesLock, &seenArticles] {
-	  //      	  articlePool.schedule( [this, it, &articlesLock, &titlesMap, &seenArticles] {
+
+       	  articlePool.schedule( [this, it, &articlesLock, &titlesMap, &seenArticles] {
 	      
 	      Article article = *it;
 	      string articleUrl = article.url;       // .../a.html etc
@@ -245,25 +245,27 @@ void NewsAggregator::processAllFeeds() {
 		sort(tokensCopy.begin(), tokensCopy.end());
 
 		articlesLock.lock();
+		pair<Article, vector<string>> value;
 		//		auto pair = {articleTitle, server};
 		//map<string, string>::iterator it = titlesMap.find({articleTitle, server});
 		if (titlesMap.count({articleTitle, server})) {   // if the titles map contains article title coming from the server
-		  string existingUrl = titlesMap[{articleTitle, server}].first;
-		  auto existingTokens = titlesMap[{articleTitle, server}].second;
+		  Article currentArticle = titlesMap[{articleTitle, server}].first;
+		  string currentUrl = currentArticle.url;
+		  		  
 		  
-		  sort(existingTokens.begin(), existingTokens.end());
 		  vector<string> tokenIntersection;
-		  set_intersection(tokensCopy.cbegin(), tokensCopy.cend(), existingTokens.cbegin(), existingTokens.cend(), back_inserter(tokenIntersection));
-
-		  		  string smallestUrl = (existingUrl < articleUrl) ? existingUrl : articleUrl;
-				  //string smallestUrl = (string(existingUrl) < string(articleUrl)) ? existingUrl : articleUrl;
-                  //cout << "Comparing " << existingUrl << " AND " << articleUrl << " and " << smallestUrl<<endl;		
-				  //				  titlesMap.erase({articleTitle, server});
-		  titlesMap[{articleTitle, server}] = make_pair(smallestUrl, tokenIntersection);
+		  auto currentTokens = titlesMap[{articleTitle, server}].second;
+		  sort(currentTokens.begin(), currentTokens.end());
+		  set_intersection(tokensCopy.cbegin(), tokensCopy.cend(), currentTokens.cbegin(), currentTokens.cend(), back_inserter(tokenIntersection));
+		  sort(tokenIntersection.begin(), tokenIntersection.end());
+		  Article smallestArticle = (currentArticle.url < article.url) ? currentArticle : article;
+		  titlesMap[{articleTitle, server}].second = tokenIntersection;
+		  titlesMap[{articleTitle, server}].first = smallestArticle;
+		  //		  titlesMap[{articleTitle, server}] = make_pair(smallestUrl, tokenIntersection);
 		  articlesLock.unlock();
 		} else { //if title Map doesn't contain, add article url and tokens tuple to the map.
-
-		  titlesMap[make_pair(articleTitle, server)] = make_pair(articleUrl, tokens);
+		  
+		  titlesMap[make_pair(articleTitle, server)] = make_pair(article, tokens);
 		  articlesLock.unlock();
 		}
 	      }
@@ -273,9 +275,9 @@ void NewsAggregator::processAllFeeds() {
 	for (auto& element: titlesMap) {
 	  indexLock.lock();
 	  pair<string, string> title_server = element.first;
-	  pair<string, vector<string>> url_tokens = element.second;
-	  Article article = {url_tokens.first, title_server.first};
-	  index.add(article, url_tokens.second);
+	  pair<Article, vector<string>> article_tokens = element.second;
+	 
+	  index.add(article_tokens.first, article_tokens.second);
 	  indexLock.unlock();
 	}
 	log.noteAllArticlesHaveBeenScheduled(rssUrl);
