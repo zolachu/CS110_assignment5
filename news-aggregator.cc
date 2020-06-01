@@ -210,8 +210,9 @@ void NewsAggregator::processAllFeeds() {
 	      
 	      Article article = *it;
 	      string articleUrl = article.url;       // .../a.html etc
-	      string articleTitle = article.title;
+	      string articleTitle = article.title;   
 	      string server = getURLServer(articleUrl);  // cs110.stanford.edu ... etc
+	      //	      cout << articleUrl << endl; // the whole article url 
 	      cout << articleUrl << endl;
 	      if(seen.find(articleUrl) == seen.end()) {
 	       
