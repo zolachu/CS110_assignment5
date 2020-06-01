@@ -212,7 +212,7 @@ void NewsAggregator::processAllFeeds() {
 	      string articleUrl = article.url;       // .../a.html etc
 	      string articleTitle = article.title;
 	      string server = getURLServer(articleUrl);  // cs110.stanford.edu ... etc
-	      
+	      cout << articleUrl << endl;
 	      if(seen.find(articleUrl) == seen.end()) {
 	       
 		seen.insert(articleUrl);
