@@ -81,7 +81,7 @@ class NewsAggregator {
   static semaphore allArticlePermits;
   static std::map<std::string, std::unique_ptr<semaphore>>serverPermits;
   static semaphore feedPermits;
-  set<string> seen;
+  //  set<string> seenArticles;
   //  map<pair<string, string>, pair<string, vector<string>>> titlesMap;
 
   /**

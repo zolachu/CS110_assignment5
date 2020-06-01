@@ -158,7 +158,7 @@ NewsAggregator::NewsAggregator(const string& rssFeedListURI, bool verbose):
 
 void NewsAggregator::processAllFeeds() {
   map<string, std::unique_ptr<semaphore>> serverPermits;
-
+  set<string> seenArticles;
   //  ThreadPool poolRSS(kNumFeedWorkers);
   ThreadPool feedPool(kNumFeedWorkers);
   RSSFeedList feedList(rssFeedListURI);
@@ -204,10 +204,10 @@ void NewsAggregator::processAllFeeds() {
 	ThreadPool articlePool(kNumArticleWorkers);
         mutex articlesLock;
       	map<pair<string, string>, pair<Article, vector<string>>> titlesMap;
-       	set<string> seenArticles;
+	//       	set<string> seenArticles;
 	for (std::vector<Article>::const_iterator it = articles.begin(); it != articles.end(); it++) {
 
-       	  articlePool.schedule( [this, it, &articlesLock, &titlesMap, &seenArticles] {
+       	  articlePool.schedule( [this, it, &articlesLock, &titlesMap] {
 	      
 	      Article article = *it;
 	      string articleUrl = article.url;       // .../a.html etc
@@ -245,9 +245,7 @@ void NewsAggregator::processAllFeeds() {
 		sort(tokensCopy.begin(), tokensCopy.end());
 
 		articlesLock.lock();
-		pair<Article, vector<string>> value;
-		//		auto pair = {articleTitle, server};
-		//map<string, string>::iterator it = titlesMap.find({articleTitle, server});
+
 		if (titlesMap.count({articleTitle, server})) {   // if the titles map contains article title coming from the server
 		  Article currentArticle = titlesMap[{articleTitle, server}].first;
 		  string currentUrl = currentArticle.url;
